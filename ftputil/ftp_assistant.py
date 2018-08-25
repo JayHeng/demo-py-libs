@@ -1,3 +1,9 @@
+
+# Library Name:  ftputil
+# Main Page:     https://ftputil.sschwarzer.net/trac/wiki/WikiStart
+# Download:      https://pypi.org/project/ftputil/
+# Documentation: https://ftputil.sschwarzer.net/trac/wiki/Documentation
+
 import sys, os
 import ftputil
 

@@ -1,3 +1,10 @@
+
+# Library Name:  pySerial
+# Main Page:     https://github.com/pyserial/pyserial
+# Download:      https://pypi.org/project/pyserial/
+# Documentation: https://pythonhosted.org/pyserial/
+#                https://pyserial.readthedocs.io/en/latest/pyserial.html
+
 import sys
 import serial
 
@@ -20,9 +27,9 @@ def initUart(com='COM0', baudrate=19200):
 
 def main(argv=None):
     mySer = initUart('COM1', 57600)
-    print mySer.portstr       # check which port was really used  
+    print mySer.portstr       # check which port was really used
     mySer.open()
-    mySer.write("hello")      # write a string  
+    mySer.write("hello")      # write a string
     mySer.close()
 
 if __name__ == "__main__":
