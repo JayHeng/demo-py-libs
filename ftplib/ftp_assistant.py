@@ -23,8 +23,8 @@ class ftpAssistant(object):
         curDir = ''
         # Create the directory level by level
         for i in range(len(dirSplit)):
-            curDir += '/' + dirSplit[i]
             if dirSplit[i] != '':
+                curDir += '/' + dirSplit[i]
                 # Check to see whether the directory of current level exists
                 try:
                     self.ftp.cwd(curDir)
