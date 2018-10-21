@@ -4,16 +4,37 @@
 # Download:      N/A
 # Documentation: https://docs.python.org/2/library/ftplib.html
 
+# Useful link for issue "socket.error: [Errno 10054] An existing connection was forcibly closed by the remote host"
+# https://grokbase.com/t/python/python-list/108r6q8y95/ftplib-limitations
+
 import sys, os
 from ftplib import FTP
 
+TRANS_RETRY_CNT = 5
+TRANS_RETRY_LAST_TIMEOUT = 3600
+
 class ftpAssistant(object):
 
-    def __init__(self, ip, port, user, passwd):
+    def __init__(self, ip, port, user, passwd, timeout = None):
         self.ftp = FTP()
-        self.ftp.connect(ip, port)
+        self.ip = ip
+        self.port = port
+        self.user = user
+        self.passwd = passwd
+        self.timeout = timeout
+        self.reConnectFtp()
+
+    def reConnectFtp(self):
         try:
-            self.ftp.login(user, passwd)
+            self.ftp.quit()
+        except:
+            pass
+        if self.timeout != None:
+            self.ftp.connect(self.ip, self.port, self.timeout)
+        else:
+            self.ftp.connect(self.ip, self.port)
+        try:
+            self.ftp.login(self.user, self.passwd)
             print(self.ftp.getwelcome())
         except:
             sys.exit()
@@ -90,7 +111,25 @@ class ftpAssistant(object):
                 remoteFile = remotePath + '/' + newFileName
             # Upload localFile to FTP server and save it to remoteFile
             fileObj = open(localFile, "rb")
-            self.ftp.storbinary('STOR %s' %(remoteFile), fileObj, 4096)
+            transRetryCnt = TRANS_RETRY_CNT
+            while transRetryCnt:
+                try:
+                    fileObj.seek(0)
+                    self.ftp.storbinary('STOR %s' %(remoteFile), fileObj, 4096)
+                    if transRetryCnt == 1:
+                        self.timeout = None
+                        self.reConnectFtp()
+                    print "Send success on " + remoteFile + '\n'
+                    break
+                except:
+                    print "Send failure on " + remoteFile + '\n'
+                    transRetryCnt = transRetryCnt - 1
+                    self.deleteDirectory(remoteFile)
+                    if transRetryCnt == 1:
+                        self.timeout = TRANS_RETRY_LAST_TIMEOUT
+                    elif transRetryCnt == 0:
+                        self.timeout = None
+                    self.reConnectFtp()
             fileObj.close()
 
     def __del__( self ):
@@ -100,22 +139,25 @@ def main(argv=None):
     localDirPath = os.path.abspath(os.path.dirname(__file__))
     localFilename = 'ftp_data_local.bin'
     localFile = os.path.join(localDirPath, localFilename)
-    fileObj = open(localFile, "wb")
-    fileObj.write('1234567')
-    fileObj.close()
+    #fileObj = open(localFile, "wb")
+    #fileObj.write('1234567')
+    #fileObj.close()
 
     #myFtp = ftpAssistant("10.193.108.156", 21, "mcuxpresso", "mcuxpresso")
-    #remoteDirPath = '/packages/ftp_test/test/'
-    myFtp = ftpAssistant("92.120.196.100", 21, "nxa16738", "Welcome@123")
-    remoteDirPath = '/ftp_test/test/'
+    #remoteDirPath = '/packages/ftp_test/'
+    myFtp = ftpAssistant("wiv7002.wbi.nxp.com", 21, "nxa16738", "Welcome@123")
+    #myFtp = ftpAssistant("92.120.196.100", 21, "nxa16738", "Welcome@123")
+    remoteDirPath = '/ftp_test/'
 
-    remoteFilename = 'ftp_data_remote.bin'
-    remoteFile = remoteDirPath + remoteFilename
+    remoteFilename = 'ftp_data_remote'
+    #remoteFile = remoteDirPath + remoteFilename
 
     myFtp.createDirectory(remoteDirPath)
-    myFtp.uploadFile(localFile, remoteDirPath, remoteFilename)
-    myFtp.downloadFile(remoteFile, localDirPath, None)
-    myFtp.deleteDirectory(remoteDirPath)
+    for i in range(100):
+        filename = remoteFilename + str(i) + '.bin'
+        myFtp.uploadFile(localFile, remoteDirPath, filename)
+    #myFtp.downloadFile(remoteFile, localDirPath, None)
+    #myFtp.deleteDirectory(remoteDirPath)
 
 if __name__ == "__main__":
     sys.exit(main())
